@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcodegen generate:*)",
+      "Bash(echo xcodegen not in PATH from WSL:*)",
+      "Bash(which xcodegen:*)",
+      "Bash(ls /Users/xe05206/Desktop/AppIA/RetroMusic/Shared && swift --version 2>/dev/null)",
+      "Bash(swift:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(uname:*)",
+      "Bash(git init:*)",
+      "Bash(git remote:*)",
+      "Bash(gh repo:*)",
+      "Bash(git --version)",
+      "Bash(curl -s \"https://api.github.com/repos/Sergiom84/Retro_Music\")",
+      "Bash(curl:*)",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(c[''''sha''''][:7], c[''''commit''''][''''message''''][:80]\\) for c in data]\")",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(t[''''path'''']\\) for t in data.get\\(''''tree'''',[]\\)]\")",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(brew install:*)",
+      "Bash(echo $GITHUB_TOKEN)",
+      "Read(//Users/xe05206/**)",
+      "Read(//Users/xe05206/.config/gh/**)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d[''''object''''][''''sha'''']\\)\")",
+      "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); [print\\(item[''''path'''']+''''|''''+item[''''type'''']+''''|''''+item.get\\(''''sha'''',''''''''\\)\\) for item in data.get\\(''''tree'''',[]\\)]\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
