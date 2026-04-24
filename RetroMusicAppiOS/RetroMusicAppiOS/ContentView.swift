@@ -97,6 +97,8 @@ struct ContentView: View {
                         .padding(.bottom, 16)
                     }
                 }
+
+                HomeMiniPlayer(player: radioPlayerManager)
             }
             .background(IPodTheme.backgroundGradient.ignoresSafeArea())
             .navigationBarHidden(true)
