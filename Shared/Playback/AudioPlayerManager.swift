@@ -22,6 +22,22 @@ class AudioPlayerManager: NSObject, ObservableObject {
     @Published var playbackErrorDomain: String?
     @Published private(set) var isLiveStreamPlayback: Bool = false
     @Published private(set) var playbackVolume: Double = 1.0
+    @Published var isShuffling: Bool = false
+    @Published var repeatMode: RepeatMode = .off
+
+    enum RepeatMode: String {
+        case off, all, one
+    }
+
+    func toggleShuffle() { isShuffling.toggle() }
+
+    func cycleRepeatMode() {
+        switch repeatMode {
+        case .off: repeatMode = .all
+        case .all: repeatMode = .one
+        case .one: repeatMode = .off
+        }
+    }
 
     private struct PlaybackRequest {
         let url: URL
@@ -238,12 +254,25 @@ class AudioPlayerManager: NSObject, ObservableObject {
     }
 
     func playNextTrack() {
-        let nextIndex = currentTrackIndex + 1
-        guard playlist.indices.contains(nextIndex) else {
-            stopAudio()
+        guard !playlist.isEmpty else { stopAudio(); return }
+
+        if isShuffling, playlist.count > 1 {
+            var next = currentTrackIndex
+            while next == currentTrackIndex {
+                next = Int.random(in: 0..<playlist.count)
+            }
+            playTrack(at: next)
             return
         }
-        playTrack(at: nextIndex)
+
+        let nextIndex = currentTrackIndex + 1
+        if playlist.indices.contains(nextIndex) {
+            playTrack(at: nextIndex)
+        } else if repeatMode == .all {
+            playTrack(at: 0)
+        } else {
+            stopAudio()
+        }
     }
 
     func playPreviousTrack() {
@@ -251,12 +280,22 @@ class AudioPlayerManager: NSObject, ObservableObject {
             seek(toProgress: 0)
             return
         }
-        let prevIndex = currentTrackIndex - 1
-        guard playlist.indices.contains(prevIndex) else {
-            seek(toProgress: 0)
+        if isShuffling, playlist.count > 1 {
+            var prev = currentTrackIndex
+            while prev == currentTrackIndex {
+                prev = Int.random(in: 0..<playlist.count)
+            }
+            playTrack(at: prev)
             return
         }
-        playTrack(at: prevIndex)
+        let prevIndex = currentTrackIndex - 1
+        if playlist.indices.contains(prevIndex) {
+            playTrack(at: prevIndex)
+        } else if repeatMode == .all, !playlist.isEmpty {
+            playTrack(at: playlist.count - 1)
+        } else {
+            seek(toProgress: 0)
+        }
     }
 
     // MARK: - Playback
@@ -725,6 +764,10 @@ class AudioPlayerManager: NSObject, ObservableObject {
             playbackErrorDomain = nil
             _ = scheduleLiveStreamRetryIfNeeded()
             updateNowPlayingInfo()
+            return
+        }
+        if repeatMode == .one, playlist.indices.contains(currentTrackIndex) {
+            playTrack(at: currentTrackIndex)
             return
         }
         playNextTrack()

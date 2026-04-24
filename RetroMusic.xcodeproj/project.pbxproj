@@ -33,6 +33,7 @@
 		834F75E803314A581B8CBCF0 /* RetroMusicApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5703086C020306798F49B07B /* RetroMusicApp.swift */; };
 		90D0691B41D2CC9225A4A02D /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 292FCA0460A204939EDB33FF /* MediaPlayer.framework */; };
 		9FF3E8B6635459C0DCF86539 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7C162262138220B561DEE4E /* Assets.xcassets */; };
+		A1DCE6BA9556FFCBF80898EC /* TrackPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE28C2072AC361803B9F69CF /* TrackPlayerView.swift */; };
 		A23E97543C4223F36B88890B /* RadioStation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F44724B083040C5C838F165 /* RadioStation.swift */; };
 		A32549FE2FCF421536BAF84F /* IPodMenuRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F252958C965C489DBC54478 /* IPodMenuRow.swift */; };
 		A883FFD661C9A9974D1A8436 /* Folder.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFACB5C52F4967055545C1AA /* Folder.swift */; };
@@ -101,6 +102,7 @@
 		C399378BE7C2455B5398B48E /* AudioTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrack.swift; sourceTree = "<group>"; };
 		C7C162262138220B561DEE4E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C977ABA770347F1EE16F167F /* RetroMusicWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroMusicWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE28C2072AC361803B9F69CF /* TrackPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackPlayerView.swift; sourceTree = "<group>"; };
 		D8062D21C120547080158A1D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		E3BA07F26A03ED726EAB2395 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E8BB16882C925C04A1CB8333 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
@@ -201,6 +203,7 @@
 				0A8BD70E1B5CEE3455897C91 /* Info.plist */,
 				7FD593AC9B11BB165B9E5D7F /* RadioListView.swift */,
 				5703086C020306798F49B07B /* RetroMusicApp.swift */,
+				CE28C2072AC361803B9F69CF /* TrackPlayerView.swift */,
 				E8BB16882C925C04A1CB8333 /* WatchConnectivityManager.swift */,
 			);
 			path = RetroMusicAppiOS;
@@ -393,6 +396,7 @@
 				35533E05DEF5428EF30448D9 /* RadioListView.swift in Sources */,
 				774C71695DEC54D9390374F9 /* RadioStation.swift in Sources */,
 				834F75E803314A581B8CBCF0 /* RetroMusicApp.swift in Sources */,
+				A1DCE6BA9556FFCBF80898EC /* TrackPlayerView.swift in Sources */,
 				3C73E42EDCE34AF19CB01407 /* WatchConnectivityManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
