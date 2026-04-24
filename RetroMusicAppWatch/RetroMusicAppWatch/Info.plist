@@ -31,7 +31,7 @@
 				<key>NSExceptionRequiresForwardSecrecy</key>
 				<false/>
 				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.0</string>
+				<string>TLSv1.2</string>
 			</dict>
 			<key>ibizaglobalradio.com</key>
 			<dict>
@@ -42,13 +42,17 @@
 				<key>NSExceptionRequiresForwardSecrecy</key>
 				<false/>
 				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.0</string>
+				<string>TLSv1.2</string>
 			</dict>
 		</dict>
 	</dict>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.sergi.retromusic</string>
+	<string>com.sergiohernandezlara07.retromusic</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 </dict>
 </plist>

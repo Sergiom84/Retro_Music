@@ -18,20 +18,38 @@ class AudioPlayerManager: NSObject, ObservableObject {
     @Published var playbackErrorCode: Int?
     @Published var playbackErrorDomain: String?
     @Published private(set) var isLiveStreamPlayback: Bool = false
+    @Published private(set) var playbackVolume: Double = 1.0
+
+    private struct PlaybackRequest {
+        let url: URL
+        let title: String
+        let artist: String
+        let artworkData: Data?
+        let isLiveStream: Bool
+    }
 
     private var player: AVPlayer?
     private var timeObserverToken: Any?
     private var currentTrackURL: URL?
+    private var activePlaybackRequest: PlaybackRequest?
     private var playerItemStatusObserver: NSKeyValueObservation?
     private var playerItemLikelyToKeepUpObserver: NSKeyValueObservation?
     private var playerItemBufferEmptyObserver: NSKeyValueObservation?
     private var playbackStalledObserver: NSObjectProtocol?
     private var failedToPlayToEndObserver: NSObjectProtocol?
+    private var liveStreamRetryWorkItem: DispatchWorkItem?
+    private var liveStreamRetryAttempts = 0
+    private let maxLiveStreamRetryAttempts = 3
+    private let liveStreamRetryBaseDelay: TimeInterval = 1.5
+    private static let playbackVolumeDefaultsKey = "retromusic_watch_playback_volume"
 
     var playlist: [AudioTrack] = []
     var onTrackChanged: ((Int) -> Void)?
 
     override init() {
+        if UserDefaults.standard.object(forKey: Self.playbackVolumeDefaultsKey) != nil {
+            playbackVolume = UserDefaults.standard.double(forKey: Self.playbackVolumeDefaultsKey)
+        }
         super.init()
         setupAudioSession()
         #if !os(watchOS)
@@ -47,12 +65,62 @@ class AudioPlayerManager: NSObject, ObservableObject {
         #if !os(macOS)
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers, .duckOthers])
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            #if os(watchOS)
+            try audioSession.setCategory(
+                .playback,
+                mode: .default,
+                options: []
+            )
+            #else
+            try audioSession.setCategory(
+                .playback,
+                mode: .default,
+                policy: .longFormAudio,
+                options: []
+            )
+            #endif
         } catch {
             print("Failed to set audio session: \(error.localizedDescription)")
         }
         #endif
+    }
+
+    private func activateAudioSessionIfNeeded(then completion: @escaping (Bool) -> Void) {
+        #if !os(macOS)
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+            completion(true)
+        } catch {
+            handleAudioSessionActivationFailure(error)
+            completion(false)
+        }
+        #else
+        completion(true)
+        #endif
+    }
+
+    private func deactivateAudioSessionIfNeeded() {
+        #if !os(macOS)
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+        } catch {
+            print("Failed to deactivate audio session: \(error.localizedDescription)")
+        }
+        #endif
+    }
+
+    private func handleAudioSessionActivationFailure(_ error: Error) {
+        let nsError = error as NSError
+        print("Failed to activate audio session: \(error.localizedDescription)")
+        isPlaying = false
+        isBuffering = false
+        playbackErrorCode = nsError.code
+        playbackErrorDomain = nsError.domain
+        playbackErrorMessage = error.localizedDescription
+    }
+
+    private func applyPlaybackVolume() {
+        player?.volume = Float(playbackVolume)
     }
 
     private func setupRemoteCommandCenter() {
@@ -61,7 +129,7 @@ class AudioPlayerManager: NSObject, ObservableObject {
 
         commandCenter.playCommand.addTarget { [unowned self] _ in
             if !self.isPlaying {
-                self.playPause()
+                self.resume()
                 return .success
             }
             return .commandFailed
@@ -69,7 +137,7 @@ class AudioPlayerManager: NSObject, ObservableObject {
 
         commandCenter.pauseCommand.addTarget { [unowned self] _ in
             if self.isPlaying {
-                self.playPause()
+                self.pause()
                 return .success
             }
             return .commandFailed
@@ -96,9 +164,9 @@ class AudioPlayerManager: NSObject, ObservableObject {
             return .success
         }
 
-        commandCenter.skipBackwardCommand.preferredIntervals = [15]
+        commandCenter.skipBackwardCommand.preferredIntervals = [30]
         commandCenter.skipBackwardCommand.addTarget { [unowned self] _ in
-            self.seekBackward(by: 15)
+            self.seekBackward(by: 30)
             return .success
         }
         #endif
@@ -161,27 +229,66 @@ class AudioPlayerManager: NSObject, ObservableObject {
     // MARK: - Playback
 
     func playAudio(url: URL, title: String, artist: String, artworkData: Data?, isLiveStream: Bool = false) {
+        startPlayback(
+            url: url,
+            title: title,
+            artist: artist,
+            artworkData: artworkData,
+            isLiveStream: isLiveStream,
+            resetLiveStreamRetryAttempts: true
+        )
+    }
+
+    private func startPlayback(
+        url: URL,
+        title: String,
+        artist: String,
+        artworkData: Data?,
+        isLiveStream: Bool,
+        resetLiveStreamRetryAttempts: Bool
+    ) {
+        if resetLiveStreamRetryAttempts {
+            liveStreamRetryAttempts = 0
+        }
+        cancelLiveStreamRetry()
+
+        let playbackRequest = PlaybackRequest(
+            url: url,
+            title: title,
+            artist: artist,
+            artworkData: artworkData,
+            isLiveStream: isLiveStream
+        )
+
         if currentTrackURL == url,
            let existingPlayer = player,
            existingPlayer.currentItem?.status != .failed,
            playbackErrorMessage == nil {
+            activePlaybackRequest = playbackRequest
             currentTrackTitle = title
             currentTrackArtist = artist
             currentTrackArtwork = artworkData
             isLiveStreamPlayback = isLiveStream
 
             if !isPlaying {
-                existingPlayer.play()
-                isPlaying = true
-                isBuffering = isLiveStream
+                activateAudioSessionIfNeeded { [weak self] activated in
+                    guard let self = self, activated, self.player === existingPlayer else { return }
+                    existingPlayer.play()
+                    self.isPlaying = true
+                    self.isBuffering = isLiveStream
+                    self.applyPlaybackVolume()
+                    self.updateNowPlayingInfo()
+                }
             }
 
+            applyPlaybackVolume()
             updateNowPlayingInfo()
             return
         }
 
-        stopAudio()
+        stopAudio(clearPlaybackRequest: false)
 
+        activePlaybackRequest = playbackRequest
         currentTrackURL = url
         currentTrackTitle = title
         currentTrackArtist = artist
@@ -193,8 +300,15 @@ class AudioPlayerManager: NSObject, ObservableObject {
         isBuffering = isLiveStream
 
         let playerItem = AVPlayerItem(url: url)
+        if isLiveStream {
+            playerItem.preferredForwardBufferDuration = 6
+            playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
+        }
         observePlayerItem(playerItem)
-        player = AVPlayer(playerItem: playerItem)
+        let newPlayer = AVPlayer(playerItem: playerItem)
+        newPlayer.automaticallyWaitsToMinimizeStalling = true
+        player = newPlayer
+        applyPlaybackVolume()
 
         if isLiveStream {
             totalDuration = 0
@@ -233,8 +347,13 @@ class AudioPlayerManager: NSObject, ObservableObject {
             self.updateNowPlayingInfo()
         }
 
-        player?.play()
-        isPlaying = true
+        activateAudioSessionIfNeeded { [weak self] activated in
+            guard let self = self, activated, self.player === newPlayer else { return }
+            newPlayer.play()
+            self.isPlaying = true
+            self.isBuffering = isLiveStream
+            self.updateNowPlayingInfo()
+        }
         updateNowPlayingInfo()
     }
 
@@ -242,17 +361,40 @@ class AudioPlayerManager: NSObject, ObservableObject {
         guard let player = player else { return }
         if isPlaying {
             player.pause()
+            isPlaying = false
             isBuffering = false
         } else {
             if playbackErrorMessage != nil {
                 player.seek(to: .zero)
             }
             playbackErrorMessage = nil
-            player.play()
-            isBuffering = isLiveStreamPlayback
+            activateAudioSessionIfNeeded { [weak self] activated in
+                guard let self = self, activated, self.player === player else { return }
+                player.play()
+                self.isPlaying = true
+                self.isBuffering = self.isLiveStreamPlayback
+                self.updateNowPlayingInfo()
+            }
         }
-        isPlaying.toggle()
         updateNowPlayingInfo()
+    }
+
+    func resume() {
+        guard let player = player, !isPlaying else { return }
+        if playbackErrorMessage != nil {
+            player.seek(to: .zero)
+            playbackErrorMessage = nil
+            playbackErrorCode = nil
+            playbackErrorDomain = nil
+        }
+        activateAudioSessionIfNeeded { [weak self] activated in
+            guard let self = self, activated, self.player === player else { return }
+            player.play()
+            self.isPlaying = true
+            self.isBuffering = self.isLiveStreamPlayback
+            self.applyPlaybackVolume()
+            self.updateNowPlayingInfo()
+        }
     }
 
     func pause() {
@@ -302,7 +444,25 @@ class AudioPlayerManager: NSObject, ObservableObject {
         }
     }
 
+    func isCurrentTrack(url: URL) -> Bool {
+        currentTrackURL == url
+    }
+
+    func setPlaybackVolume(_ newValue: Double) {
+        let clampedValue = min(max(newValue, 0.0), 1.0)
+        guard abs(clampedValue - playbackVolume) > 0.001 else { return }
+
+        playbackVolume = clampedValue
+        UserDefaults.standard.set(clampedValue, forKey: Self.playbackVolumeDefaultsKey)
+        applyPlaybackVolume()
+    }
+
     func stopAudio() {
+        stopAudio(clearPlaybackRequest: true)
+    }
+
+    private func stopAudio(clearPlaybackRequest: Bool) {
+        cancelLiveStreamRetry()
         if let token = timeObserverToken {
             player?.removeTimeObserver(token)
             timeObserverToken = nil
@@ -310,6 +470,7 @@ class AudioPlayerManager: NSObject, ObservableObject {
         removePlayerItemObservers()
         player?.pause()
         player = nil
+        deactivateAudioSessionIfNeeded()
         isPlaying = false
         isBuffering = false
         currentProgress = 0.0
@@ -323,6 +484,10 @@ class AudioPlayerManager: NSObject, ObservableObject {
         playbackErrorMessage = nil
         playbackErrorCode = nil
         playbackErrorDomain = nil
+        if clearPlaybackRequest {
+            activePlaybackRequest = nil
+            liveStreamRetryAttempts = 0
+        }
         #if !os(watchOS)
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         #endif
@@ -410,7 +575,77 @@ class AudioPlayerManager: NSObject, ObservableObject {
         playbackErrorMessage = error?.localizedDescription ?? "No se pudo reproducir el stream."
         playbackErrorCode = error?.code
         playbackErrorDomain = error?.domain
+
+        if isLiveStreamPlayback,
+           !shouldDeferToCompatibilityFallback(error),
+           scheduleLiveStreamRetryIfNeeded() {
+            updateNowPlayingInfo()
+            return
+        }
+
         updateNowPlayingInfo()
+    }
+
+    private func cancelLiveStreamRetry() {
+        liveStreamRetryWorkItem?.cancel()
+        liveStreamRetryWorkItem = nil
+    }
+
+    @discardableResult
+    private func scheduleLiveStreamRetryIfNeeded() -> Bool {
+        guard let request = activePlaybackRequest, request.isLiveStream else {
+            return false
+        }
+
+        guard liveStreamRetryWorkItem == nil else {
+            return true
+        }
+
+        guard liveStreamRetryAttempts < maxLiveStreamRetryAttempts else {
+            return false
+        }
+
+        liveStreamRetryAttempts += 1
+        let retryDelay = liveStreamRetryBaseDelay * Double(liveStreamRetryAttempts)
+
+        playbackErrorMessage = nil
+        playbackErrorCode = nil
+        playbackErrorDomain = nil
+        isBuffering = true
+
+        let retryWorkItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            self.startPlayback(
+                url: request.url,
+                title: request.title,
+                artist: request.artist,
+                artworkData: request.artworkData,
+                isLiveStream: request.isLiveStream,
+                resetLiveStreamRetryAttempts: false
+            )
+        }
+
+        liveStreamRetryWorkItem = retryWorkItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + retryDelay, execute: retryWorkItem)
+        return true
+    }
+
+    private func shouldDeferToCompatibilityFallback(_ error: NSError?) -> Bool {
+        guard error?.domain == NSURLErrorDomain, let code = error?.code else {
+            return false
+        }
+
+        let compatibilityFallbackCodes: Set<Int> = [
+            NSURLErrorSecureConnectionFailed,
+            NSURLErrorServerCertificateUntrusted,
+            NSURLErrorServerCertificateHasBadDate,
+            NSURLErrorServerCertificateNotYetValid,
+            NSURLErrorServerCertificateHasUnknownRoot,
+            NSURLErrorClientCertificateRejected,
+            NSURLErrorAppTransportSecurityRequiresSecureConnection
+        ]
+
+        return compatibilityFallbackCodes.contains(code)
     }
 
     // MARK: - Interruptions
@@ -432,10 +667,15 @@ class AudioPlayerManager: NSObject, ObservableObject {
             if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
                 let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
                 if options.contains(.shouldResume), !isPlaying, currentTrackURL != nil {
-                    player?.play()
-                    isPlaying = true
-                    isBuffering = isLiveStreamPlayback
-                    updateNowPlayingInfo()
+                    guard let player else { return }
+                    activateAudioSessionIfNeeded { [weak self] activated in
+                        guard let self = self, activated, self.player === player else { return }
+                        player.play()
+                        self.isPlaying = true
+                        self.isBuffering = self.isLiveStreamPlayback
+                        self.applyPlaybackVolume()
+                        self.updateNowPlayingInfo()
+                    }
                 }
             }
         }
@@ -444,7 +684,14 @@ class AudioPlayerManager: NSObject, ObservableObject {
 
     @objc func playerDidFinishPlaying(note: Notification) {
         if isLiveStreamPlayback {
-            stopAudio()
+            player?.pause()
+            isPlaying = false
+            isBuffering = true
+            playbackErrorMessage = "La emisora se interrumpio."
+            playbackErrorCode = nil
+            playbackErrorDomain = nil
+            _ = scheduleLiveStreamRetryIfNeeded()
+            updateNowPlayingInfo()
             return
         }
         playNextTrack()

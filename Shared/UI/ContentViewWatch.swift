@@ -65,6 +65,7 @@ private struct WatchLibrarySectionView: View {
     let tracks: [AudioTrack]
     @ObservedObject var audioPlayerManager: AudioPlayerManager
     @ObservedObject var connectivityManager: WatchConnectivityManager
+    @State private var editingTrack: AudioTrack?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -88,17 +89,28 @@ private struct WatchLibrarySectionView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
-                            NavigationLink(
-                                destination: NowPlayingView(
-                                    audioPlayerManager: audioPlayerManager,
-                                    connectivityManager: connectivityManager,
-                                    tracks: tracks,
-                                    initialTrackIndex: index
-                                )
-                            ) {
-                                IPodTrackRow(track: track)
+                            HStack(spacing: 6) {
+                                NavigationLink(
+                                    destination: NowPlayingView(
+                                        audioPlayerManager: audioPlayerManager,
+                                        tracks: tracks,
+                                        initialTrackIndex: index
+                                    )
+                                ) {
+                                    IPodTrackRow(track: track)
+                                }
+                                .buttonStyle(IPodButtonStyle())
+
+                                Button {
+                                    editingTrack = track
+                                } label: {
+                                    Image(systemName: "ellipsis.circle")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(IPodTheme.textSecondary)
+                                        .padding(.trailing, 10)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(IPodButtonStyle())
 
                             IPodSeparator()
                         }
@@ -107,6 +119,84 @@ private struct WatchLibrarySectionView: View {
             }
         }
         .background(IPodTheme.backgroundGradient.ignoresSafeArea())
+        .sheet(item: $editingTrack) { track in
+            WatchTrackEditorView(
+                track: track,
+                connectivityManager: connectivityManager,
+                audioPlayerManager: audioPlayerManager
+            )
+        }
+    }
+}
+
+private struct WatchTrackEditorView: View {
+    let track: AudioTrack
+    @ObservedObject var connectivityManager: WatchConnectivityManager
+    @ObservedObject var audioPlayerManager: AudioPlayerManager
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var editedTitle: String
+    @State private var showingDeleteConfirmation = false
+
+    init(track: AudioTrack, connectivityManager: WatchConnectivityManager, audioPlayerManager: AudioPlayerManager) {
+        self.track = track
+        self.connectivityManager = connectivityManager
+        self.audioPlayerManager = audioPlayerManager
+        _editedTitle = State(initialValue: track.title)
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            IPodTitleBar(title: "Editar")
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Nombre")
+                    .font(IPodTheme.font(11, weight: .bold))
+                    .foregroundColor(IPodTheme.textPrimary)
+
+                TextField("Título", text: $editedTitle)
+                    .textInputAutocapitalization(.words)
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.white.opacity(0.08))
+                    )
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+
+            Button("Guardar") {
+                let trimmedTitle = editedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedTitle.isEmpty else { return }
+                connectivityManager.renameTrack(id: track.id, newTitle: trimmedTitle)
+                if audioPlayerManager.isCurrentTrack(url: track.filePath) {
+                    audioPlayerManager.currentTrackTitle = trimmedTitle
+                }
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button("Eliminar", role: .destructive) {
+                showingDeleteConfirmation = true
+            }
+            .buttonStyle(.bordered)
+
+            Spacer()
+        }
+        .padding(.bottom, 8)
+        .background(IPodTheme.backgroundGradient.ignoresSafeArea())
+        .confirmationDialog("Eliminar pista", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Eliminar", role: .destructive) {
+                if audioPlayerManager.isCurrentTrack(url: track.filePath) {
+                    audioPlayerManager.stopAudio()
+                }
+                connectivityManager.deleteTrack(id: track.id)
+                dismiss()
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("Esta acción borrará el archivo del reloj.")
+        }
     }
 }
 
@@ -186,6 +276,28 @@ private struct WatchRadioPlayerView: View {
                 .foregroundColor(IPodTheme.textPrimary)
                 .multilineTextAlignment(.center)
 
+            Text("Vol \(Int((audioPlayerManager.playbackVolume * 100).rounded()))%")
+                .font(IPodTheme.font(10))
+                .foregroundColor(IPodTheme.textSecondary)
+
+            HStack(spacing: 8) {
+                Button {
+                    audioPlayerManager.setPlaybackVolume(audioPlayerManager.playbackVolume - 0.1)
+                } label: {
+                    Image(systemName: "minus.circle")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    audioPlayerManager.setPlaybackVolume(audioPlayerManager.playbackVolume + 0.1)
+                } label: {
+                    Image(systemName: "plus.circle")
+                }
+                .buttonStyle(.plain)
+            }
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundColor(IPodTheme.textPrimary)
+
             statusView
 
             Button(action: togglePlayback) {
@@ -208,7 +320,9 @@ private struct WatchRadioPlayerView: View {
         .padding()
         .background(IPodTheme.backgroundGradient.ignoresSafeArea())
         .navigationTitle(station.name)
-        .onAppear(perform: handleOnAppear)
+        .onAppear {
+            handleOnAppear()
+        }
         .onChange(of: audioPlayerManager.playbackErrorCode) { _, _ in
             attemptCompatibilityFallbackIfNeeded()
         }
@@ -266,7 +380,11 @@ private struct WatchRadioPlayerView: View {
 
     private func togglePlayback() {
         if isCurrentStation && audioPlayerManager.playbackErrorMessage == nil {
-            audioPlayerManager.playPause()
+            if audioPlayerManager.isPlaying {
+                audioPlayerManager.pause()
+            } else {
+                audioPlayerManager.resume()
+            }
             return
         }
 
@@ -286,7 +404,7 @@ private struct WatchRadioPlayerView: View {
                 return
             }
             if !audioPlayerManager.isPlaying {
-                audioPlayerManager.playPause()
+                audioPlayerManager.resume()
             }
             return
         }
@@ -296,7 +414,7 @@ private struct WatchRadioPlayerView: View {
 
     private func playStation(useCompatibilityFallback: Bool = false) {
         usingCompatibilityFallback = useCompatibilityFallback
-        let selectedURL = useCompatibilityFallback ? (station.watchFallbackStreamURL ?? station.streamURL) : station.streamURL
+        let selectedURL = useCompatibilityFallback ? (station.compatibilityStreamURL ?? station.streamURL) : station.streamURL
         audioPlayerManager.playAudio(
             url: selectedURL,
             title: station.name,
@@ -323,7 +441,7 @@ private struct WatchRadioPlayerView: View {
 
         guard isCurrentStation,
               !attemptedCompatibilityFallback,
-              station.watchFallbackStreamURL != nil,
+              station.compatibilityStreamURL != nil,
               audioPlayerManager.playbackErrorDomain == NSURLErrorDomain,
               let code = audioPlayerManager.playbackErrorCode,
               networkFailureCodes.contains(code) else {
