@@ -3,6 +3,9 @@ import AVFoundation
 #if !os(watchOS)
 import MediaPlayer
 #endif
+#if os(iOS)
+import UIKit
+#endif
 
 class AudioPlayerManager: NSObject, ObservableObject {
     @Published var isPlaying: Bool = false
@@ -65,20 +68,12 @@ class AudioPlayerManager: NSObject, ObservableObject {
         #if !os(macOS)
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            #if os(watchOS)
-            try audioSession.setCategory(
-                .playback,
-                mode: .default,
-                options: []
-            )
-            #else
             try audioSession.setCategory(
                 .playback,
                 mode: .default,
                 policy: .longFormAudio,
                 options: []
             )
-            #endif
         } catch {
             print("Failed to set audio session: \(error.localizedDescription)")
         }
@@ -87,6 +82,18 @@ class AudioPlayerManager: NSObject, ObservableObject {
 
     private func activateAudioSessionIfNeeded(then completion: @escaping (Bool) -> Void) {
         #if !os(macOS)
+        #if os(watchOS)
+        AVAudioSession.sharedInstance().activate(options: []) { [weak self] activated, error in
+            DispatchQueue.main.async {
+                if activated {
+                    completion(true)
+                } else {
+                    self?.handleAudioSessionActivationFailure(error)
+                    completion(false)
+                }
+            }
+        }
+        #else
         do {
             try AVAudioSession.sharedInstance().setActive(true)
             completion(true)
@@ -94,6 +101,7 @@ class AudioPlayerManager: NSObject, ObservableObject {
             handleAudioSessionActivationFailure(error)
             completion(false)
         }
+        #endif
         #else
         completion(true)
         #endif
@@ -109,14 +117,15 @@ class AudioPlayerManager: NSObject, ObservableObject {
         #endif
     }
 
-    private func handleAudioSessionActivationFailure(_ error: Error) {
-        let nsError = error as NSError
-        print("Failed to activate audio session: \(error.localizedDescription)")
+    private func handleAudioSessionActivationFailure(_ error: Error?) {
+        let nsError = error as NSError?
+        let message = error?.localizedDescription ?? "No se pudo activar la ruta de audio."
+        print("Failed to activate audio session: \(message)")
         isPlaying = false
         isBuffering = false
-        playbackErrorCode = nsError.code
-        playbackErrorDomain = nsError.domain
-        playbackErrorMessage = error.localizedDescription
+        playbackErrorCode = nsError?.code
+        playbackErrorDomain = nsError?.domain
+        playbackErrorMessage = message
     }
 
     private func applyPlaybackVolume() {
@@ -125,6 +134,10 @@ class AudioPlayerManager: NSObject, ObservableObject {
 
     private func setupRemoteCommandCenter() {
         #if !os(watchOS)
+        #if os(iOS)
+        UIApplication.shared.beginReceivingRemoteControlEvents()
+        #endif
+
         let commandCenter = MPRemoteCommandCenter.shared()
 
         commandCenter.playCommand.addTarget { [unowned self] _ in

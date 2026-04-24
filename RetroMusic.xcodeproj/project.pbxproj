@@ -71,6 +71,7 @@
 
 /* Begin PBXFileReference section */
 		08C8F0C979AED588995244D3 /* RetroMusicAppWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroMusicAppWatch.swift; sourceTree = "<group>"; };
+		0A8BD70E1B5CEE3455897C91 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		14EC27A2D31B6BC0B90E4B14 /* IPodProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPodProgressBar.swift; sourceTree = "<group>"; };
 		221DE16598228C2E68C50975 /* AudioMetadataExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMetadataExtractor.swift; sourceTree = "<group>"; };
 		2545577072E8F55591647D61 /* FolderListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderListView.swift; sourceTree = "<group>"; };
@@ -186,6 +187,7 @@
 				E3BA07F26A03ED726EAB2395 /* ContentView.swift */,
 				7E127C3427718C2321D81773 /* DocumentPicker.swift */,
 				2545577072E8F55591647D61 /* FolderListView.swift */,
+				0A8BD70E1B5CEE3455897C91 /* Info.plist */,
 				7FD593AC9B11BB165B9E5D7F /* RadioListView.swift */,
 				5703086C020306798F49B07B /* RetroMusicApp.swift */,
 				E8BB16882C925C04A1CB8333 /* WatchConnectivityManager.swift */,
@@ -534,10 +536,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = RetroMusic;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RetroMusicAppiOS/RetroMusicAppiOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -557,10 +557,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = RetroMusic;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RetroMusicAppiOS/RetroMusicAppiOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

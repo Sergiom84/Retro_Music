@@ -16,6 +16,19 @@ targets:
     sources:
       - path: RetroMusicAppiOS/RetroMusicAppiOS
       - path: Shared
+    info:
+      path: RetroMusicAppiOS/RetroMusicAppiOS/Info.plist
+      properties:
+        CFBundleDisplayName: RetroMusic
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+          UISceneConfigurations: {}
+        UILaunchScreen:
+          UILaunchScreen: {}
+        UIBackgroundModes:
+          - audio
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoadsForMedia: true
     dependencies:
       - target: RetroMusicWatch
         embed: true
@@ -25,10 +38,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sergiohernandezlara07.retromusic
         PRODUCT_NAME: RetroMusic
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: RetroMusic
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: RetroMusicAppiOS/RetroMusicAppiOS/Info.plist
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         SUPPORTED_PLATFORMS: "iphonesimulator iphoneos"
