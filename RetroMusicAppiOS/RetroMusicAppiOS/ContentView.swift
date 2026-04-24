@@ -34,6 +34,50 @@ struct ContentView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
+                        // Menu items
+                        VStack(spacing: 0) {
+                            NavigationLink(
+                                destination: FolderListView(
+                                    folders: $folders,
+                                    selectedFolder: $selectedFolder,
+                                    showDocumentPicker: $showDocumentPicker,
+                                    selectedFileURL: $selectedFileURL,
+                                    connectivityManager: connectivityManager
+                                )
+                            ) {
+                                IPodMenuRow(label: "Music", icon: "music.note")
+                            }
+                            .buttonStyle(IPodButtonStyle())
+
+                            IPodSeparator()
+
+                            NavigationLink(
+                                destination: RadioListView(
+                                    audioPlayerManager: radioPlayerManager,
+                                    stationStore: radioStationStore,
+                                    connectivityManager: connectivityManager
+                                )
+                            ) {
+                                IPodMenuRow(label: "Radio", icon: "dot.radiowaves.left.and.right")
+                            }
+                            .buttonStyle(IPodButtonStyle())
+
+                            IPodSeparator()
+
+                            NavigationLink(
+                                destination: FolderListView(
+                                    folders: $folders,
+                                    selectedFolder: $selectedFolder,
+                                    showDocumentPicker: $showDocumentPicker,
+                                    selectedFileURL: $selectedFileURL,
+                                    connectivityManager: connectivityManager
+                                )
+                            ) {
+                                IPodMenuRow(label: "Podcasts", icon: "mic.fill")
+                            }
+                            .buttonStyle(IPodButtonStyle())
+                        }
+
                         HomeSectionsView(
                             homeModel: homeModel,
                             stationStore: radioStationStore,
@@ -50,55 +94,9 @@ struct ContentView: View {
                                 )
                             }
                         )
-                        .padding(.top, 12)
+                        .padding(.bottom, 16)
                     }
                 }
-
-                // Menu items
-                VStack(spacing: 0) {
-                    NavigationLink(
-                        destination: FolderListView(
-                            folders: $folders,
-                            selectedFolder: $selectedFolder,
-                            showDocumentPicker: $showDocumentPicker,
-                            selectedFileURL: $selectedFileURL,
-                            connectivityManager: connectivityManager
-                        )
-                    ) {
-                        IPodMenuRow(label: "Music", icon: "music.note")
-                    }
-                    .buttonStyle(IPodButtonStyle())
-
-                    IPodSeparator()
-
-                    NavigationLink(
-                        destination: RadioListView(
-                            audioPlayerManager: radioPlayerManager,
-                            stationStore: radioStationStore,
-                            connectivityManager: connectivityManager
-                        )
-                    ) {
-                        IPodMenuRow(label: "Radio", icon: "dot.radiowaves.left.and.right")
-                    }
-                    .buttonStyle(IPodButtonStyle())
-
-                    IPodSeparator()
-
-                    NavigationLink(
-                        destination: FolderListView(
-                            folders: $folders,
-                            selectedFolder: $selectedFolder,
-                            showDocumentPicker: $showDocumentPicker,
-                            selectedFileURL: $selectedFileURL,
-                            connectivityManager: connectivityManager
-                        )
-                    ) {
-                        IPodMenuRow(label: "Podcasts", icon: "mic.fill")
-                    }
-                    .buttonStyle(IPodButtonStyle())
-                }
-
-                Spacer()
             }
             .background(IPodTheme.backgroundGradient.ignoresSafeArea())
             .navigationBarHidden(true)
