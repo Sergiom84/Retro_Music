@@ -26,7 +26,8 @@
       "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); [print\\(item[''''path'''']+''''|''''+item[''''type'''']+''''|''''+item.get\\(''''sha'''',''''''''\\)\\) for item in data.get\\(''''tree'''',[]\\)]\")",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(./scripts/generate_xcode_project.sh)"
+      "Bash(./scripts/generate_xcode_project.sh)",
+      "Bash(python3)"
     ]
   }
 }

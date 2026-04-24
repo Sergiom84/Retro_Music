@@ -6,6 +6,7 @@ struct FolderListView: View {
     @Binding var showDocumentPicker: Bool
     @Binding var selectedFileURL: URL?
     @ObservedObject var connectivityManager: WatchConnectivityManager
+    @ObservedObject var audioPlayerManager: AudioPlayerManager
 
     @State private var showingAddFolderAlert = false
     @State private var newFolderName = ""
@@ -25,7 +26,8 @@ struct FolderListView: View {
                                 folder: $folder,
                                 showDocumentPicker: $showDocumentPicker,
                                 selectedFileURL: $selectedFileURL,
-                                connectivityManager: connectivityManager
+                                connectivityManager: connectivityManager,
+                                audioPlayerManager: audioPlayerManager
                             )) {
                                 IPodMenuRow(label: folder.name, icon: "folder.fill")
                             }

@@ -10,7 +10,7 @@ struct ContentView: View {
     @State private var selectedFolder: Folder? = nil
 
     @StateObject var connectivityManager = WatchConnectivityManager()
-    @StateObject private var radioPlayerManager = AudioPlayerManager()
+    @StateObject private var audioPlayerManager = AudioPlayerManager()
     @StateObject private var radioStationStore = UserRadioStationStore()
     @StateObject private var homeModel = HomeModel()
 
@@ -42,7 +42,8 @@ struct ContentView: View {
                                     selectedFolder: $selectedFolder,
                                     showDocumentPicker: $showDocumentPicker,
                                     selectedFileURL: $selectedFileURL,
-                                    connectivityManager: connectivityManager
+                                    connectivityManager: connectivityManager,
+                                    audioPlayerManager: audioPlayerManager
                                 )
                             ) {
                                 IPodMenuRow(label: "Music", icon: "music.note")
@@ -53,7 +54,7 @@ struct ContentView: View {
 
                             NavigationLink(
                                 destination: RadioListView(
-                                    audioPlayerManager: radioPlayerManager,
+                                    audioPlayerManager: audioPlayerManager,
                                     stationStore: radioStationStore,
                                     connectivityManager: connectivityManager
                                 )
@@ -70,7 +71,8 @@ struct ContentView: View {
                                     selectedFolder: $selectedFolder,
                                     showDocumentPicker: $showDocumentPicker,
                                     selectedFileURL: $selectedFileURL,
-                                    connectivityManager: connectivityManager
+                                    connectivityManager: connectivityManager,
+                                    audioPlayerManager: audioPlayerManager
                                 )
                             ) {
                                 IPodMenuRow(label: "Podcasts", icon: "mic.fill")
@@ -85,7 +87,7 @@ struct ContentView: View {
                             onResumeMusic: {},
                             onResumePodcast: {},
                             onPlayStation: { station in
-                                radioPlayerManager.playAudio(
+                                audioPlayerManager.playAudio(
                                     url: station.streamURL,
                                     title: station.name,
                                     artist: "Live Radio",
@@ -98,7 +100,7 @@ struct ContentView: View {
                     }
                 }
 
-                HomeMiniPlayer(player: radioPlayerManager)
+                HomeMiniPlayer(player: audioPlayerManager)
             }
             .background(IPodTheme.backgroundGradient.ignoresSafeArea())
             .navigationBarHidden(true)

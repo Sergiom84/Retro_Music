@@ -6,6 +6,7 @@ struct AudioTrackListView: View {
     @Binding var showDocumentPicker: Bool
     @Binding var selectedFileURL: URL?
     @ObservedObject var connectivityManager: WatchConnectivityManager
+    @ObservedObject var audioPlayerManager: AudioPlayerManager
 
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
@@ -23,7 +24,12 @@ struct AudioTrackListView: View {
                 VStack(spacing: 0) {
                     ForEach(folder.audioTracks) { track in
                         HStack(spacing: 0) {
-                            IPodTrackRow(track: track)
+                            Button {
+                                playTrack(track)
+                            } label: {
+                                IPodTrackRow(track: track)
+                            }
+                            .buttonStyle(IPodButtonStyle())
 
                             transferStatusView(for: track)
                                 .frame(width: 96, alignment: .trailing)
@@ -62,7 +68,9 @@ struct AudioTrackListView: View {
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 0)
+
+            HomeMiniPlayer(player: audioPlayerManager)
         }
         .background(IPodTheme.backgroundGradient.ignoresSafeArea())
 #if os(iOS)
@@ -239,6 +247,17 @@ struct AudioTrackListView: View {
         }
 
         selectedFileURL = nil
+    }
+
+    private func playTrack(_ track: AudioTrack) {
+        guard let index = folder.audioTracks.firstIndex(where: { $0.id == track.id }) else { return }
+        audioPlayerManager.setPlaylist(folder.audioTracks, startAt: index)
+        audioPlayerManager.playAudio(
+            url: track.filePath,
+            title: track.title,
+            artist: track.artist ?? "",
+            artworkData: track.artworkData
+        )
     }
 
     private func transferTrackToWatch(track: AudioTrack) {
