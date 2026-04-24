@@ -264,62 +264,95 @@ private struct WatchRadioPlayerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
-            Spacer()
+        ZStack {
+            IPodTheme.backgroundGradient
+                .ignoresSafeArea()
 
-            Image(systemName: "dot.radiowaves.left.and.right")
-                .font(.system(size: 28))
+            VStack(spacing: 6) {
+                Spacer(minLength: 2)
+
+                Image(systemName: "dot.radiowaves.left.and.right")
+                    .font(.system(size: 24))
+                    .foregroundColor(IPodTheme.textPrimary)
+
+                Text(station.name)
+                    .font(IPodTheme.font(13, weight: .bold))
+                    .foregroundColor(IPodTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+
+                Text("Vol \(Int((audioPlayerManager.playbackVolume * 100).rounded()))%")
+                    .font(IPodTheme.font(10))
+                    .foregroundColor(IPodTheme.textSecondary)
+
+                HStack(spacing: 8) {
+                    Button {
+                        audioPlayerManager.setPlaybackVolume(audioPlayerManager.playbackVolume - 0.1)
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        audioPlayerManager.setPlaybackVolume(audioPlayerManager.playbackVolume + 0.1)
+                    } label: {
+                        Image(systemName: "plus.circle")
+                    }
+                    .buttonStyle(.plain)
+                }
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(IPodTheme.textPrimary)
 
-            Text(station.name)
-                .font(IPodTheme.font(15, weight: .bold))
-                .foregroundColor(IPodTheme.textPrimary)
-                .multilineTextAlignment(.center)
+                statusView
+                    .frame(minHeight: 58)
 
-            Text("Vol \(Int((audioPlayerManager.playbackVolume * 100).rounded()))%")
-                .font(IPodTheme.font(10))
-                .foregroundColor(IPodTheme.textSecondary)
+                HStack(spacing: 12) {
+                    Button(action: togglePlayback) {
+                        VStack(spacing: 4) {
+                            Image(systemName: playButtonIcon)
+                                .font(.system(size: 16, weight: .bold))
+                            Text(audioPlayerManager.isPlaying && currentErrorMessage == nil ? "Pausar" : "Play")
+                                .font(IPodTheme.font(10, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(width: 60, height: 60)
+                        .background(
+                            Circle()
+                                .fill(Color.black.opacity(0.55))
+                        )
+                    }
+                    .buttonStyle(.plain)
 
-            HStack(spacing: 8) {
-                Button {
-                    audioPlayerManager.setPlaybackVolume(audioPlayerManager.playbackVolume - 0.1)
-                } label: {
-                    Image(systemName: "minus.circle")
+                    Button {
+                        audioPlayerManager.stopAudio()
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: "stop.fill")
+                                .font(.system(size: 16, weight: .bold))
+                            Text("Stop")
+                                .font(IPodTheme.font(10, weight: .bold))
+                        }
+                        .foregroundColor(IPodTheme.textPrimary)
+                        .frame(width: 60, height: 60)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.24))
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.black.opacity(0.12), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
 
-                Button {
-                    audioPlayerManager.setPlaybackVolume(audioPlayerManager.playbackVolume + 0.1)
-                } label: {
-                    Image(systemName: "plus.circle")
-                }
-                .buttonStyle(.plain)
+                Spacer(minLength: 18)
             }
-            .font(.system(size: 18, weight: .semibold))
-            .foregroundColor(IPodTheme.textPrimary)
-
-            statusView
-
-            Button(action: togglePlayback) {
-                HStack(spacing: 6) {
-                    Image(systemName: playButtonIcon)
-                    Text(playButtonLabel)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-            }
-            .buttonStyle(.borderedProminent)
-
-            Button("Detener") {
-                audioPlayerManager.stopAudio()
-            }
-            .buttonStyle(.bordered)
-
-            Spacer()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
         }
-        .padding()
-        .background(IPodTheme.backgroundGradient.ignoresSafeArea())
-        .navigationTitle(station.name)
         .onAppear {
             handleOnAppear()
         }
