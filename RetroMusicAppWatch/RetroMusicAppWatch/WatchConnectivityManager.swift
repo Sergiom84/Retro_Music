@@ -22,12 +22,21 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             pushLibrarySyncStateToiOS()
         }
     }
+    @Published var receivedRadioStations: [RadioStation] = [] {
+        didSet {
+            saveRadioStations()
+        }
+    }
 
     private static let syncEventKey = "event"
     private static let syncTrackIDKey = "trackId"
     private static let syncedTrackIDsKey = "syncedTrackIDs"
     private static let trackSyncedEvent = "trackSynced"
     private static let trackRemovedEvent = "trackRemoved"
+    private static let radioStationAddedEvent = "radioStationAdded"
+    private static let radioStationSyncedEvent = "radioStationSynced"
+    private static let radioStationKey = "radioStation"
+    private static let radioStationIDKey = "radioStationId"
 
     private static var tracksFileURL: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
@@ -42,6 +51,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             WCSession.default.activate()
         }
         loadAudioTracks()
+        loadRadioStations()
     }
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
@@ -100,6 +110,29 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
+    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
+        guard let event = userInfo[Self.syncEventKey] as? String else {
+            return
+        }
+
+        switch event {
+        case Self.radioStationAddedEvent:
+            guard let encodedStation = userInfo[Self.radioStationKey] as? Data,
+                  let station = try? JSONDecoder().decode(RadioStation.self, from: encodedStation) else {
+                print("❌ Invalid radio station metadata received")
+                return
+            }
+
+            DispatchQueue.main.async {
+                self.upsertReceivedRadioStation(station)
+                self.notifyiOSAboutSyncedRadioStation(station.id)
+                print("✅ Radio station received: \(station.name)")
+            }
+        default:
+            break
+        }
+    }
+
     // MARK: - Persistence (JSON file)
 
     private func saveAudioTracks() {
@@ -109,6 +142,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         } catch {
             print("Error saving audio tracks: \(error.localizedDescription)")
         }
+    }
+
+    private func saveRadioStations() {
+        RadioStationPersistence.save(receivedRadioStations)
     }
 
     private func loadAudioTracks() {
@@ -131,6 +168,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             self.receivedAudioTracks = decoded
             UserDefaults.standard.removeObject(forKey: legacyKey)
         }
+    }
+
+    private func loadRadioStations() {
+        receivedRadioStations = RadioStationPersistence.load()
     }
 
     // MARK: - Track Management
@@ -283,6 +324,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         receivedAudioTracks.append(track)
     }
 
+    private func upsertReceivedRadioStation(_ station: RadioStation) {
+        receivedRadioStations = RadioStationPersistence.upserting(station, in: receivedRadioStations)
+    }
+
     private func removeFileIfExists(at url: URL) {
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         try? FileManager.default.removeItem(at: url)
@@ -294,6 +339,21 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     private func notifyiOSAboutTrackRemoval(_ trackID: UUID) {
         transferTrackStateEvent(Self.trackRemovedEvent, trackID: trackID)
+    }
+
+    private func notifyiOSAboutSyncedRadioStation(_ stationID: String) {
+        guard WCSession.isSupported() else { return }
+
+        let session = WCSession.default
+        guard session.activationState == .activated else {
+            print("⚠️ Unable to report radio sync state, WCSession not activated yet")
+            return
+        }
+
+        session.transferUserInfo([
+            Self.syncEventKey: Self.radioStationSyncedEvent,
+            Self.radioStationIDKey: stationID
+        ])
     }
 
     private func transferTrackStateEvent(_ event: String, trackID: UUID) {
@@ -339,8 +399,15 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     @Published var receivedAudioTracks: [AudioTrack] = [] {
         didSet { saveAudioTracks() }
     }
+    @Published var receivedRadioStations: [RadioStation] = [] {
+        didSet { RadioStationPersistence.save(receivedRadioStations) }
+    }
 
-    override init() { super.init(); loadAudioTracks() }
+    override init() {
+        super.init()
+        loadAudioTracks()
+        receivedRadioStations = RadioStationPersistence.load()
+    }
 
     func sendMessageToiOS(message: String) {
         // WatchConnectivity not available on this platform

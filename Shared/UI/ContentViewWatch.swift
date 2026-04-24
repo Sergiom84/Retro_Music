@@ -46,7 +46,12 @@ struct ContentViewWatch: View {
 
                 IPodSeparator()
 
-                NavigationLink(destination: WatchRadioListView(audioPlayerManager: audioPlayerManager)) {
+                NavigationLink(
+                    destination: WatchRadioListView(
+                        audioPlayerManager: audioPlayerManager,
+                        connectivityManager: connectivityManager
+                    )
+                ) {
                     IPodMenuRow(label: "Radio", icon: "dot.radiowaves.left.and.right")
                 }
                 .buttonStyle(IPodButtonStyle())
@@ -202,7 +207,11 @@ private struct WatchTrackEditorView: View {
 
 private struct WatchRadioListView: View {
     @ObservedObject var audioPlayerManager: AudioPlayerManager
-    private let stations = RadioCatalog.stations
+    @ObservedObject var connectivityManager: WatchConnectivityManager
+
+    private var stations: [RadioStation] {
+        RadioCatalog.stations(adding: connectivityManager.receivedRadioStations)
+    }
 
     var body: some View {
         VStack(spacing: 0) {

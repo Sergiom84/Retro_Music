@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		07D55ECD19AE65165DDEB646 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 797FCB689DB9BCA08F92FF10 /* Assets.xcassets */; };
 		0E7DA90499B3C526284478E6 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8062D21C120547080158A1D /* AVFoundation.framework */; };
 		1488E938BF6D6BEBB33F0D72 /* Folder.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFACB5C52F4967055545C1AA /* Folder.swift */; };
 		18E5B569801DAADE61F9FEB3 /* RetroMusicAppWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C8F0C979AED588995244D3 /* RetroMusicAppWatch.swift */; };
@@ -30,6 +31,7 @@
 		774C71695DEC54D9390374F9 /* RadioStation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F44724B083040C5C838F165 /* RadioStation.swift */; };
 		834F75E803314A581B8CBCF0 /* RetroMusicApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5703086C020306798F49B07B /* RetroMusicApp.swift */; };
 		90D0691B41D2CC9225A4A02D /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 292FCA0460A204939EDB33FF /* MediaPlayer.framework */; };
+		9FF3E8B6635459C0DCF86539 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7C162262138220B561DEE4E /* Assets.xcassets */; };
 		A23E97543C4223F36B88890B /* RadioStation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F44724B083040C5C838F165 /* RadioStation.swift */; };
 		A32549FE2FCF421536BAF84F /* IPodMenuRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F252958C965C489DBC54478 /* IPodMenuRow.swift */; };
 		A883FFD661C9A9974D1A8436 /* Folder.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFACB5C52F4967055545C1AA /* Folder.swift */; };
@@ -83,6 +85,7 @@
 		61666048D03C30CF575F0525 /* RetroMusiciOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RetroMusiciOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7155280392995B708BA48F05 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
 		77D42D97179F35FF10C5C2D9 /* AudioTrackListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrackListView.swift; sourceTree = "<group>"; };
+		797FCB689DB9BCA08F92FF10 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7E127C3427718C2321D81773 /* DocumentPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPicker.swift; sourceTree = "<group>"; };
 		7F252958C965C489DBC54478 /* IPodMenuRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPodMenuRow.swift; sourceTree = "<group>"; };
 		7FD593AC9B11BB165B9E5D7F /* RadioListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioListView.swift; sourceTree = "<group>"; };
@@ -92,6 +95,7 @@
 		90B09DCB2425BF35151B7D52 /* IPodArtworkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPodArtworkView.swift; sourceTree = "<group>"; };
 		97F15681BCFE34E9DC083B0F /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		C399378BE7C2455B5398B48E /* AudioTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrack.swift; sourceTree = "<group>"; };
+		C7C162262138220B561DEE4E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C977ABA770347F1EE16F167F /* RetroMusicWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroMusicWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D8062D21C120547080158A1D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		E3BA07F26A03ED726EAB2395 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -182,6 +186,7 @@
 		AE0EC389B5A7A16838C1B417 /* RetroMusicAppiOS */ = {
 			isa = PBXGroup;
 			children = (
+				797FCB689DB9BCA08F92FF10 /* Assets.xcassets */,
 				221DE16598228C2E68C50975 /* AudioMetadataExtractor.swift */,
 				77D42D97179F35FF10C5C2D9 /* AudioTrackListView.swift */,
 				E3BA07F26A03ED726EAB2395 /* ContentView.swift */,
@@ -198,6 +203,7 @@
 		AE9107D8F6FF407B3DCEC7D5 /* RetroMusicAppWatch */ = {
 			isa = PBXGroup;
 			children = (
+				C7C162262138220B561DEE4E /* Assets.xcassets */,
 				8499358E145CC53EB44A8F3F /* ContentView.swift */,
 				26E22BDDBFF03FC8EB28E2FF /* Info.plist */,
 				97F15681BCFE34E9DC083B0F /* NowPlayingView.swift */,
@@ -245,6 +251,7 @@
 			buildConfigurationList = 15C32ED6CD11D5F25BADC7D3 /* Build configuration list for PBXNativeTarget "RetroMusicWatch" */;
 			buildPhases = (
 				78C7721786AA5800C61EBAF3 /* Sources */,
+				ECD1AC2F78EB747003851EA7 /* Resources */,
 				C48EB128519BF78F27B3754D /* Frameworks */,
 			);
 			buildRules = (
@@ -263,6 +270,7 @@
 			buildConfigurationList = 9569728E0F3E50088DD3E4F0 /* Build configuration list for PBXNativeTarget "RetroMusiciOS" */;
 			buildPhases = (
 				95BC975DB3F88B3A559580D7 /* Sources */,
+				B86886BA3E961E4FA9363088 /* Resources */,
 				BA4BE7B6F1434DDEE52AF577 /* Frameworks */,
 				651B3C4BA41425CC174ED09D /* Embed Watch Content */,
 			);
@@ -316,6 +324,25 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B86886BA3E961E4FA9363088 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				07D55ECD19AE65165DDEB646 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ECD1AC2F78EB747003851EA7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9FF3E8B6635459C0DCF86539 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		78C7721786AA5800C61EBAF3 /* Sources */ = {

@@ -2,7 +2,14 @@ import SwiftUI
 
 struct RadioListView: View {
     @ObservedObject var audioPlayerManager: AudioPlayerManager
-    private let radioStations = RadioCatalog.stations
+    @ObservedObject var stationStore: UserRadioStationStore
+    @ObservedObject var connectivityManager: WatchConnectivityManager
+
+    @State private var showingAddStation = false
+
+    private var radioStations: [RadioStation] {
+        RadioCatalog.stations(adding: stationStore.stations)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -10,15 +17,12 @@ struct RadioListView: View {
 
             VStack(spacing: 0) {
                 ForEach(radioStations) { station in
-                    NavigationLink(
-                        destination: RadioPlayerView(
-                            station: station,
-                            audioPlayerManager: audioPlayerManager
-                        )
-                    ) {
-                        IPodMenuRow(label: station.name, icon: "antenna.radiowaves.left.and.right")
-                    }
-                    .buttonStyle(IPodButtonStyle())
+                    RadioStationListRow(
+                        station: station,
+                        audioPlayerManager: audioPlayerManager,
+                        stationStore: stationStore,
+                        connectivityManager: connectivityManager
+                    )
 
                     IPodSeparator()
                 }
@@ -28,6 +32,198 @@ struct RadioListView: View {
         }
         .background(IPodTheme.backgroundGradient.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingAddStation = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundColor(IPodTheme.textPrimary)
+                }
+                .accessibilityLabel("Añadir emisora")
+            }
+        }
+        .sheet(isPresented: $showingAddStation) {
+            AddRadioStationView(stationStore: stationStore)
+        }
+    }
+}
+
+private struct RadioStationListRow: View {
+    let station: RadioStation
+    @ObservedObject var audioPlayerManager: AudioPlayerManager
+    @ObservedObject var stationStore: UserRadioStationStore
+    @ObservedObject var connectivityManager: WatchConnectivityManager
+
+    private var transferStatus: TransferStatus {
+        connectivityManager.radioTransferStatusByStationId[station.id] ?? .idle
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            NavigationLink(
+                destination: RadioPlayerView(
+                    station: station,
+                    audioPlayerManager: audioPlayerManager
+                )
+            ) {
+                IPodMenuRow(
+                    label: station.name,
+                    icon: "antenna.radiowaves.left.and.right",
+                    showChevron: !station.isUserAdded
+                )
+            }
+            .buttonStyle(IPodButtonStyle())
+
+            if station.isUserAdded {
+                Button {
+                    connectivityManager.transferRadioStationToWatch(station)
+                } label: {
+                    Image(systemName: transferButtonIcon)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(transferButtonColor)
+                        .frame(width: 34, height: 38)
+                }
+                .buttonStyle(.plain)
+                .disabled(isTransferPending)
+                .accessibilityLabel("Mandar al Apple Watch")
+
+                Button {
+                    stationStore.removeStation(id: station.id)
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.red.opacity(0.86))
+                        .frame(width: 34, height: 38)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Eliminar emisora")
+            }
+        }
+    }
+
+    private var isTransferPending: Bool {
+        if case .queued = transferStatus {
+            return true
+        }
+        if case .transferring = transferStatus {
+            return true
+        }
+        return false
+    }
+
+    private var transferButtonIcon: String {
+        switch transferStatus {
+        case .idle:
+            return "applewatch"
+        case .queued, .transferring:
+            return "clock"
+        case .sent:
+            return "checkmark.circle.fill"
+        case .error:
+            return "exclamationmark.triangle.fill"
+        }
+    }
+
+    private var transferButtonColor: Color {
+        switch transferStatus {
+        case .sent:
+            return .green
+        case .error:
+            return .red
+        default:
+            return IPodTheme.textPrimary
+        }
+    }
+}
+
+private struct AddRadioStationView: View {
+    @ObservedObject var stationStore: UserRadioStationStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var stationName = ""
+    @State private var stationURL = ""
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Nombre")
+                        .font(IPodTheme.font(13, weight: .bold))
+                        .foregroundColor(IPodTheme.textPrimary)
+
+                    TextField("Pure Ibiza", text: $stationName)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("URL")
+                        .font(IPodTheme.font(13, weight: .bold))
+                        .foregroundColor(IPodTheme.textPrimary)
+
+                    TextField("https://...", text: $stationURL)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                }
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(IPodTheme.font(12))
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Button(action: saveStation) {
+                    Label("Guardar", systemImage: "checkmark")
+                        .font(IPodTheme.font(15, weight: .bold))
+                        .foregroundColor(IPodTheme.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.white.opacity(0.30))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(IPodTheme.separatorColor, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+            .padding(20)
+            .background(IPodTheme.backgroundGradient.ignoresSafeArea())
+            .navigationTitle("Nueva emisora")
+            .navigationBarTitleDisplayMode(.inline)
+            .tint(IPodTheme.textSecondary)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancelar") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func saveStation() {
+        let trimmedName = stationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            errorMessage = "Introduce un nombre."
+            return
+        }
+
+        guard let normalizedURL = RadioStation.normalizedStreamURL(from: stationURL) else {
+            errorMessage = "Introduce una URL http o https valida."
+            return
+        }
+
+        stationStore.addStation(name: trimmedName, streamURL: normalizedURL)
+        dismiss()
     }
 }
 

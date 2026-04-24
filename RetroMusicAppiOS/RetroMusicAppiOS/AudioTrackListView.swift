@@ -73,7 +73,7 @@ struct AudioTrackListView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showDocumentPicker = true }) {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundColor(IPodTheme.highlightStart)
+                        .foregroundColor(IPodTheme.textPrimary)
                 }
             }
         }
@@ -136,7 +136,7 @@ struct AudioTrackListView: View {
         case .queued:
             transferProgressLabel(progress, fallbackText: "En cola", tint: .orange)
         case .transferring:
-            transferProgressLabel(progress, fallbackText: "Enviando", tint: IPodTheme.highlightStart)
+            transferProgressLabel(progress, fallbackText: "Enviando", tint: IPodTheme.textSecondary)
         case .sent:
             Label("En reloj", systemImage: "checkmark.circle.fill")
                 .font(.caption2)
@@ -154,7 +154,7 @@ struct AudioTrackListView: View {
             } else {
                 Button(action: { transferTrackToWatch(track: track) }) {
                     Image(systemName: "applewatch.radiowaves.left.and.right")
-                        .foregroundColor(IPodTheme.highlightStart)
+                        .foregroundColor(IPodTheme.textPrimary)
                 }
             }
         }

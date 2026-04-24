@@ -193,9 +193,29 @@ class AudioPlayerManager: NSObject, ObservableObject {
         nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = totalDuration
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate ?? 0
+        #if os(iOS)
+        if let artwork = nowPlayingArtwork() {
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+        }
+        #endif
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
         #endif
     }
+
+    #if os(iOS)
+    private func nowPlayingArtwork() -> MPMediaItemArtwork? {
+        let image: UIImage?
+        if let currentTrackArtwork,
+           let trackArtworkImage = UIImage(data: currentTrackArtwork) {
+            image = trackArtworkImage
+        } else {
+            image = UIImage(named: "NowPlayingIcon")
+        }
+
+        guard let image else { return nil }
+        return MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+    }
+    #endif
 
     // MARK: - Playlist management
 

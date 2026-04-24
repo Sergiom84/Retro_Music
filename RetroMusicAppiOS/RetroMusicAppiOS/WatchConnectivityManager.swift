@@ -100,6 +100,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @Published private(set) var sessionStatus: WatchSessionStatus = .unsupported
     @Published var transferStatusByTrackId: [UUID: TransferStatus] = [:]
     @Published var transferProgressByTrackId: [UUID: TransferProgressSnapshot] = [:]
+    @Published var radioTransferStatusByStationId: [String: TransferStatus] = [:]
     @Published var lastTransferError: String?
     @Published private(set) var syncedTrackIDs: Set<UUID> = [] {
         didSet {
@@ -125,6 +126,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     private static let syncedTrackIDsKey = "syncedTrackIDs"
     private static let trackSyncedEvent = "trackSynced"
     private static let trackRemovedEvent = "trackRemoved"
+    private static let radioStationAddedEvent = "radioStationAdded"
+    private static let radioStationSyncedEvent = "radioStationSynced"
+    private static let radioStationKey = "radioStation"
+    private static let radioStationIDKey = "radioStationId"
 
     private static var syncedTracksFileURL: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
@@ -287,6 +292,39 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
+    func transferRadioStationToWatch(_ station: RadioStation) {
+        let session = WCSession.default
+
+        #if os(iOS)
+        guard session.isPaired else {
+            setRadioTransferStatus(.error("No hay Apple Watch emparejado"), for: station.id)
+            return
+        }
+
+        guard session.isWatchAppInstalled else {
+            setRadioTransferStatus(.error("La app del Watch no esta instalada"), for: station.id)
+            return
+        }
+        #endif
+
+        guard session.activationState == .activated else {
+            setRadioTransferStatus(.error("Sesion no activada"), for: station.id)
+            return
+        }
+
+        do {
+            let encodedStation = try JSONEncoder().encode(station)
+            setRadioTransferStatus(.queued, for: station.id)
+            session.transferUserInfo([
+                Self.syncEventKey: Self.radioStationAddedEvent,
+                Self.radioStationIDKey: station.id,
+                Self.radioStationKey: encodedStation
+            ])
+        } catch {
+            setRadioTransferStatus(.error("Error al codificar emisora"), for: station.id)
+        }
+    }
+
     private func monitorTransfer(_ transfer: WCSessionFileTransfer, trackId: UUID, expectedBytes: Int64) {
         DispatchQueue.global(qos: .utility).async { [weak self] in
             var lastObservedStatus: TransferStatus = .queued
@@ -340,6 +378,15 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 self.transferProgressByTrackId.removeValue(forKey: trackId)
             } else if case .sent = status {
                 self.transferProgressByTrackId.removeValue(forKey: trackId)
+            }
+        }
+    }
+
+    private func setRadioTransferStatus(_ status: TransferStatus, for stationId: String) {
+        DispatchQueue.main.async {
+            self.radioTransferStatusByStationId[stationId] = status
+            if case .error(let msg) = status {
+                self.lastTransferError = msg
             }
         }
     }
@@ -591,6 +638,18 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
+    func session(_ session: WCSession, didFinish userInfoTransfer: WCSessionUserInfoTransfer, error: Error?) {
+        guard let event = userInfoTransfer.userInfo[Self.syncEventKey] as? String,
+              event == Self.radioStationAddedEvent,
+              let stationID = userInfoTransfer.userInfo[Self.radioStationIDKey] as? String else {
+            return
+        }
+
+        if let error {
+            setRadioTransferStatus(.error(error.localizedDescription), for: stationID)
+        }
+    }
+
     // MARK: - Receiving Data
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
@@ -603,22 +662,33 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
-        guard let event = userInfo[Self.syncEventKey] as? String,
-              let trackIDString = userInfo[Self.syncTrackIDKey] as? String,
-              let trackID = UUID(uuidString: trackIDString) else {
+        guard let event = userInfo[Self.syncEventKey] as? String else {
             return
         }
 
         switch event {
         case Self.trackSyncedEvent:
+            guard let trackID = trackID(from: userInfo) else { return }
             print("Watch confirmed synced track: \(trackID.uuidString)")
             markTrackAsSynced(trackID)
         case Self.trackRemovedEvent:
+            guard let trackID = trackID(from: userInfo) else { return }
             print("Watch confirmed removed track: \(trackID.uuidString)")
             markTrackAsRemovedFromWatch(trackID)
+        case Self.radioStationSyncedEvent:
+            guard let stationID = userInfo[Self.radioStationIDKey] as? String else { return }
+            print("Watch confirmed synced radio station: \(stationID)")
+            setRadioTransferStatus(.sent, for: stationID)
         default:
             break
         }
+    }
+
+    private func trackID(from userInfo: [String: Any]) -> UUID? {
+        guard let trackIDString = userInfo[Self.syncTrackIDKey] as? String else {
+            return nil
+        }
+        return UUID(uuidString: trackIDString)
     }
 
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {

@@ -9,8 +9,8 @@ struct IPodTheme {
     }
 
     // MARK: - Highlight (selection bar)
-    static let highlightStart = Color(red: 0.23, green: 0.51, blue: 0.96)   // #3B82F6
-    static let highlightEnd = Color(red: 0.12, green: 0.25, blue: 0.69)     // #1E40AF
+    static let highlightStart = Color(white: 0.34)
+    static let highlightEnd = Color(white: 0.08)
     static var highlightGradient: LinearGradient {
         LinearGradient(colors: [highlightStart, highlightEnd], startPoint: .leading, endPoint: .trailing)
     }
@@ -30,7 +30,7 @@ struct IPodTheme {
 
     // MARK: - Progress bar
     static let progressBackground = Color(white: 0.80)
-    static let progressFill = Color(red: 0.23, green: 0.51, blue: 0.96)
+    static let progressFill = Color(white: 0.24)
 
     // MARK: - Fonts
     static func font(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {

@@ -11,6 +11,7 @@ struct ContentView: View {
 
     @StateObject var connectivityManager = WatchConnectivityManager()
     @StateObject private var radioPlayerManager = AudioPlayerManager()
+    @StateObject private var radioStationStore = UserRadioStationStore()
 
     private static var foldersFileURL: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
@@ -47,7 +48,13 @@ struct ContentView: View {
 
                     IPodSeparator()
 
-                    NavigationLink(destination: RadioListView(audioPlayerManager: radioPlayerManager)) {
+                    NavigationLink(
+                        destination: RadioListView(
+                            audioPlayerManager: radioPlayerManager,
+                            stationStore: radioStationStore,
+                            connectivityManager: connectivityManager
+                        )
+                    ) {
                         IPodMenuRow(label: "Radio", icon: "dot.radiowaves.left.and.right")
                     }
                     .buttonStyle(IPodButtonStyle())
@@ -66,23 +73,6 @@ struct ContentView: View {
                         IPodMenuRow(label: "Podcasts", icon: "mic.fill")
                     }
                     .buttonStyle(IPodButtonStyle())
-
-                    IPodSeparator()
-
-                    NavigationLink(
-                        destination: FolderListView(
-                            folders: $folders,
-                            selectedFolder: $selectedFolder,
-                            showDocumentPicker: $showDocumentPicker,
-                            selectedFileURL: $selectedFileURL,
-                            connectivityManager: connectivityManager
-                        )
-                    ) {
-                        IPodMenuRow(label: "Playlists", icon: "music.note.list")
-                    }
-                    .buttonStyle(IPodButtonStyle())
-
-                    IPodSeparator()
                 }
 
                 Spacer()
@@ -90,6 +80,7 @@ struct ContentView: View {
             .background(IPodTheme.backgroundGradient.ignoresSafeArea())
             .navigationBarHidden(true)
         }
+        .tint(IPodTheme.textPrimary)
         .onAppear {
             connectivityManager.refreshSessionStatus()
             loadFolders()
@@ -115,10 +106,8 @@ struct ContentView: View {
             do {
                 let data = try Data(contentsOf: Self.foldersFileURL)
                 let decoded = try JSONDecoder().decode([Folder].self, from: data)
-                if !decoded.isEmpty {
-                    folders = decoded
-                    return
-                }
+                folders = decoded
+                return
             } catch {
                 print("Error loading folders from JSON: \(error.localizedDescription)")
             }
