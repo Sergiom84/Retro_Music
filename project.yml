@@ -7,7 +7,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: "P92L2CBRM2"
     ALWAYS_SEARCH_USER_PATHS: "NO"
 targets:
   RetroMusiciOS:
@@ -23,7 +23,7 @@ targets:
       - sdk: AVFoundation.framework
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.sergi.retromusic
+        PRODUCT_BUNDLE_IDENTIFIER: com.sergiohernandezlara07.retromusic
         PRODUCT_NAME: RetroMusic
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: RetroMusic
@@ -46,7 +46,7 @@ targets:
       - sdk: MediaPlayer.framework
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.sergi.retromusic.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.sergiohernandezlara07.retromusic.watchkitapp
         PRODUCT_NAME: RetroMusicWatch
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: RetroMusicAppWatch/RetroMusicAppWatch/Info.plist

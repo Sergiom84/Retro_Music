@@ -10,7 +10,7 @@
 - [x] Limpieza de arboles duplicados vacios aplicada.
 - [x] Base de proyecto Xcode declarativa agregada (`project.yml` + script de generacion).
 - [x] Persistencia de `AudioTrack` migrada a `storedFileName` con compatibilidad backward (`filePath` legacy).
-- [x] `transferFile` usa metadata ligera (sin `artworkData`) para mayor estabilidad.
+- [x] `transferFile` usa metadata ligera con artwork optimizado/omitido para mayor estabilidad.
 - [x] `NowPlayingView` no pausa automaticamente al salir (reproduccion continua).
 - [x] Seek forward/backward actualizado con limites y refresco inmediato de progreso.
 - [x] Borrado de pista elimina archivo fisico en iPhone y Watch.
@@ -23,7 +23,7 @@
 - [x] Eliminado `NotificationController.swift` (API WatchKit deprecada en watchOS 10+).
 - [x] Persistencia migrada de UserDefaults a archivos JSON en Documents (ambos targets).
 - [x] Migracion automatica desde UserDefaults a JSON al primer arranque.
-- [x] Limite de tamano de archivo: 50 MB por transferencia al Watch.
+- [x] Limite de tamano de archivo: 200 MB por transferencia al Watch.
 - [x] Feedback visual de transferencia en iOS: estados queued/transferring/sent/error.
 - [x] Alertas de error visibles al usuario en importacion y transferencia.
 - [x] Reproduccion con playlist: auto-avance al siguiente track cuando termina.
@@ -33,12 +33,17 @@
 - [x] `NowPlayingView` no reinicia track si ya esta reproduciendose el mismo.
 - [x] Monitorizacion de transferencia con `didFinishFileTransfer` para errores.
 - [x] `TARGETED_DEVICE_FAMILY` corregido a solo iPhone ("1").
+- [x] `AudioPlayerManager` movido a `Shared/Playback` para radio nativa iOS/watchOS.
+- [x] Radio iOS cambiada de Safari/web player a AVPlayer nativo con stream directo.
+- [x] Limite real de transferencia ajustado a 200 MB.
+- [x] Radio live con buffer inicial, errores visibles y reintentos cortos.
+- [x] Marcado manual de pista como musica/podcast para corregir clasificacion.
 
 ## Fase 1 - Estabilidad de datos (alta prioridad)
 - [x] Migrar persistencia de `AudioTrack.filePath` a `storedFileName` (ruta relativa/filename).
 - [x] Crear migracion de compatibilidad para tracks ya guardados con URL absoluta.
 - [x] Borrado seguro: cuando se elimina un track, borrar tambien el archivo local asociado.
-- [x] Definir limites de tamano por archivo para proteger memoria y almacenamiento del reloj (50 MB).
+- [x] Definir limites de tamano por archivo para proteger memoria y almacenamiento del reloj (200 MB).
 - [x] Migrar persistencia de UserDefaults a JSON files en Documents.
 
 ### Criterio de salida Fase 1 - COMPLETADA
@@ -81,5 +86,5 @@
 - Build reproducible en Mac sin ambiguedad de rutas.
 
 ## Riesgos abiertos
-- Validacion final de build en Mac pendiente (este entorno no ejecuta Xcode).
+- Validacion final en dispositivo fisico pendiente, especialmente radio con red real del Apple Watch.
 - Tracks legacy con URL absoluta previa pueden requerir reimport manual si el archivo original ya no existe.

@@ -7,6 +7,7 @@ App iOS + watchOS con estetica retro iPod para importar audio en iPhone, transfe
 - `RetroMusicAppWatch/RetroMusicAppWatch`: codigo fuente watchOS
 - `Shared/Models`: modelos compartidos (`AudioTrack`, `Folder`)
 - `Shared/UI`: UI compartida del watch y componentes comunes
+- `Shared/Playback`: reproduccion compartida para audio local del watch y radio iOS/watchOS
 - `project.yml`: configuracion XcodeGen
 
 ## Generar proyecto en Mac

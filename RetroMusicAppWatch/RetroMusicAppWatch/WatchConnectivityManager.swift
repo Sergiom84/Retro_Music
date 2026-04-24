@@ -10,6 +10,7 @@ private struct TransferTrackMetadata: Codable {
     let duration: TimeInterval
     let isPodcast: Bool
     let storedFileName: String
+    let artworkData: Data?
 }
 
 class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
@@ -18,10 +19,15 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @Published var receivedAudioTracks: [AudioTrack] = [] {
         didSet {
             saveAudioTracks()
+            pushLibrarySyncStateToiOS()
         }
     }
 
-    private let processingQueue = DispatchQueue(label: "com.retromusic.watch.file-processing", qos: .userInitiated)
+    private static let syncEventKey = "event"
+    private static let syncTrackIDKey = "trackId"
+    private static let syncedTrackIDsKey = "syncedTrackIDs"
+    private static let trackSyncedEvent = "trackSynced"
+    private static let trackRemovedEvent = "trackRemoved"
 
     private static var tracksFileURL: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
@@ -45,6 +51,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         }
         
         print("✅ WCSession activated with state: \(activationState.rawValue)")
+        pushLibrarySyncStateToiOS()
         
         #if os(iOS)
         print("📱 iOS - isPaired: \(session.isPaired), isWatchAppInstalled: \(session.isWatchAppInstalled), isReachable: \(session.isReachable)")
@@ -131,10 +138,27 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     func deleteTracks(at offsets: IndexSet) {
         for index in offsets.sorted(by: >) {
             guard receivedAudioTracks.indices.contains(index) else { continue }
-            let track = receivedAudioTracks[index]
-            removeFileIfExists(at: track.filePath)
-            receivedAudioTracks.remove(at: index)
+            deleteTrack(id: receivedAudioTracks[index].id)
         }
+    }
+
+    func renameTrack(id: UUID, newTitle: String) {
+        let trimmedTitle = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty,
+              let index = receivedAudioTracks.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+
+        receivedAudioTracks[index].title = trimmedTitle
+    }
+
+    func deleteTrack(id: UUID) {
+        guard let index = receivedAudioTracks.firstIndex(where: { $0.id == id }) else { return }
+
+        let track = receivedAudioTracks[index]
+        removeFileIfExists(at: track.filePath)
+        receivedAudioTracks.remove(at: index)
+        notifyiOSAboutTrackRemoval(track.id)
     }
 
     // MARK: - File Reception
@@ -142,71 +166,78 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     func session(_ session: WCSession, didReceive file: WCSessionFile) {
         let sourceURL = file.fileURL
         let metadata = file.metadata
+        let transferMetadata = decodeTransferMetadata(from: metadata)
 
-        processingQueue.async { [weak self] in
-            guard let self = self else { return }
-            
-            print("📥 Received file from iOS: \(sourceURL.lastPathComponent)")
-            let destinationURL = self.resolveDestinationURL(for: sourceURL, metadata: metadata)
+        print("📥 Received file from iOS: \(sourceURL.lastPathComponent)")
+        let destinationURL = resolveDestinationURL(for: sourceURL, transferMetadata: transferMetadata)
 
-            do {
-                if FileManager.default.fileExists(atPath: destinationURL.path) {
-                    print("⚠️ File already exists at destination, removing: \(destinationURL.lastPathComponent)")
-                    try FileManager.default.removeItem(at: destinationURL)
-                }
-                try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
-                print("✅ File moved to: \(destinationURL.path)")
+        guard let parsedTrack = parseReceivedTrack(
+            transferMetadata: transferMetadata,
+            metadata: metadata,
+            destinationURL: destinationURL
+        ) else {
+            print("❌ No valid metadata for file: \(destinationURL.lastPathComponent)")
+            DispatchQueue.main.async {
+                self.receivedFileCount += 1
+            }
+            return
+        }
 
-                let parsedTrack = self.parseReceivedTrack(metadata: metadata, destinationURL: destinationURL)
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    self.receivedFileCount += 1
-                    if let track = parsedTrack {
-                        self.upsertReceivedTrack(track)
-                        print("✅ AudioTrack received: \(track.title)")
-                    } else {
-                        self.removeFileIfExists(at: destinationURL)
-                        print("❌ No valid metadata for file: \(destinationURL.lastPathComponent)")
-                    }
-                }
-            } catch {
-                print("❌ Error processing received file: \(error.localizedDescription)")
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    self.receivedFileCount += 1
-                }
+        do {
+            try ensureParentDirectoryExists(for: destinationURL)
+
+            if FileManager.default.fileExists(atPath: destinationURL.path) {
+                print("⚠️ File already exists at destination, removing: \(destinationURL.lastPathComponent)")
+                try FileManager.default.removeItem(at: destinationURL)
+            }
+
+            try storeReceivedFile(from: sourceURL, to: destinationURL)
+
+            DispatchQueue.main.async {
+                self.receivedFileCount += 1
+                self.upsertReceivedTrack(parsedTrack)
+                self.notifyiOSAboutSyncedTrack(parsedTrack.id)
+                print("✅ AudioTrack received: \(parsedTrack.title)")
+            }
+        } catch {
+            print("❌ Error processing received file: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.receivedFileCount += 1
             }
         }
     }
 
-    private func resolveDestinationURL(for sourceURL: URL, metadata: [String: Any]?) -> URL {
+    private func resolveDestinationURL(for sourceURL: URL, transferMetadata: TransferTrackMetadata?) -> URL {
         let defaultName = sourceURL.lastPathComponent
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
 
-        guard let transferMetadata = decodeTransferMetadata(from: metadata),
-              !transferMetadata.storedFileName.isEmpty else {
+        guard let transferMetadata, !transferMetadata.storedFileName.isEmpty else {
             return documentsDirectory.appendingPathComponent(defaultName)
         }
 
         return documentsDirectory.appendingPathComponent(transferMetadata.storedFileName)
     }
 
-    private func parseReceivedTrack(metadata: [String: Any]?, destinationURL: URL) -> AudioTrack? {
-        guard let encodedTrack = metadata?["audioTrack"] as? Data else { return nil }
-
-        if let lightMeta = try? JSONDecoder().decode(TransferTrackMetadata.self, from: encodedTrack) {
+    private func parseReceivedTrack(
+        transferMetadata: TransferTrackMetadata?,
+        metadata: [String: Any]?,
+        destinationURL: URL
+    ) -> AudioTrack? {
+        if let lightMeta = transferMetadata {
             return AudioTrack(
                 id: lightMeta.id,
                 title: lightMeta.title,
                 artist: lightMeta.artist,
                 album: lightMeta.album,
-                artworkData: nil,
+                artworkData: lightMeta.artworkData,
                 filePath: destinationURL,
                 duration: lightMeta.duration,
                 isPodcast: lightMeta.isPodcast
             )
         }
+
+        guard let encodedTrack = metadata?["audioTrack"] as? Data else { return nil }
 
         if var legacyTrack = try? JSONDecoder().decode(AudioTrack.self, from: encodedTrack) {
             legacyTrack.filePath = destinationURL
@@ -216,9 +247,28 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         return nil
     }
 
+    private func storeReceivedFile(from sourceURL: URL, to destinationURL: URL) throws {
+        do {
+            try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
+            print("✅ File moved to: \(destinationURL.path)")
+        } catch {
+            print("⚠️ Move failed, falling back to copy: \(error.localizedDescription)")
+            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+            print("✅ File copied to: \(destinationURL.path)")
+            if FileManager.default.fileExists(atPath: sourceURL.path) {
+                try? FileManager.default.removeItem(at: sourceURL)
+            }
+        }
+    }
+
     private func decodeTransferMetadata(from metadata: [String: Any]?) -> TransferTrackMetadata? {
         guard let encodedTrack = metadata?["audioTrack"] as? Data else { return nil }
         return try? JSONDecoder().decode(TransferTrackMetadata.self, from: encodedTrack)
+    }
+
+    private func ensureParentDirectoryExists(for destinationURL: URL) throws {
+        let directoryURL = destinationURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
     }
 
     private func upsertReceivedTrack(_ track: AudioTrack) {
@@ -236,6 +286,48 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     private func removeFileIfExists(at url: URL) {
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         try? FileManager.default.removeItem(at: url)
+    }
+
+    private func notifyiOSAboutSyncedTrack(_ trackID: UUID) {
+        transferTrackStateEvent(Self.trackSyncedEvent, trackID: trackID)
+    }
+
+    private func notifyiOSAboutTrackRemoval(_ trackID: UUID) {
+        transferTrackStateEvent(Self.trackRemovedEvent, trackID: trackID)
+    }
+
+    private func transferTrackStateEvent(_ event: String, trackID: UUID) {
+        guard WCSession.isSupported() else { return }
+
+        let session = WCSession.default
+        guard session.activationState == .activated else {
+            print("⚠️ Unable to report track sync state, WCSession not activated yet")
+            return
+        }
+
+        session.transferUserInfo([
+            Self.syncEventKey: event,
+            Self.syncTrackIDKey: trackID.uuidString
+        ])
+    }
+
+    private func pushLibrarySyncStateToiOS() {
+        guard WCSession.isSupported() else { return }
+
+        let session = WCSession.default
+        guard session.activationState == .activated else {
+            return
+        }
+
+        let syncedTrackIDs = receivedAudioTracks.map(\.id.uuidString).sorted()
+
+        do {
+            try session.updateApplicationContext([
+                Self.syncedTrackIDsKey: syncedTrackIDs
+            ])
+        } catch {
+            print("⚠️ Failed to update watch library sync state: \(error.localizedDescription)")
+        }
     }
 }
 #else
@@ -305,4 +397,3 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     }
 }
 #endif
-

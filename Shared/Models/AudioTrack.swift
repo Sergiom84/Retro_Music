@@ -2,13 +2,13 @@ import Foundation
 
 struct AudioTrack: Identifiable, Codable, Equatable {
     let id: UUID
-    let title: String
+    var title: String
     let artist: String?
     let album: String?
     let artworkData: Data?
     var storedFileName: String
     let duration: TimeInterval
-    let isPodcast: Bool
+    var isPodcast: Bool
 
     var filePath: URL {
         get {

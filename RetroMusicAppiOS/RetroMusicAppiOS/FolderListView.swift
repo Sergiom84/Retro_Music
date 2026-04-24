@@ -12,7 +12,7 @@ struct FolderListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            IPodTitleBar(title: "Folders")
+            IPodTitleBar(title: "Playlists")
 
             ScrollView {
                 VStack(spacing: 0) {
@@ -46,10 +46,15 @@ struct FolderListView: View {
                 }
             }
         }
-        .alert("New Folder", isPresented: $showingAddFolderAlert) {
-            TextField("Folder Name", text: $newFolderName)
+        .alert("New Playlist", isPresented: $showingAddFolderAlert) {
+            TextField("Playlist Name", text: $newFolderName)
             Button("Add") {
-                let newFolder = Folder(id: UUID(), name: newFolderName, audioTracks: [])
+                let playlistName = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let newFolder = Folder(
+                    id: UUID(),
+                    name: playlistName.isEmpty ? "Untitled Playlist" : playlistName,
+                    audioTracks: []
+                )
                 folders.append(newFolder)
                 newFolderName = ""
             }

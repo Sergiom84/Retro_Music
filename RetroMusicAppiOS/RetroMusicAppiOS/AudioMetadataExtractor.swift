@@ -23,8 +23,14 @@ class AudioMetadataExtractor {
                 var album: String? = nil
                 var artworkData: Data? = nil
                 var isPodcast: Bool = false
+                var searchableText = [url.deletingPathExtension().lastPathComponent]
                 
                 for item in metadata {
+                    if let stringValue = try? await item.load(.stringValue),
+                       !stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        searchableText.append(stringValue)
+                    }
+
                     guard let key = item.commonKey else { continue }
                     
                     switch key {
@@ -43,8 +49,9 @@ class AudioMetadataExtractor {
                 
                 let durationSeconds = CMTimeGetSeconds(duration)
                 
-                // Simple heuristic for podcast: if title contains 'podcast' or no album/artist
-                if let t = title?.lowercased(), t.contains("podcast") || (album == nil && artist == nil) {
+                if searchableText.contains(where: { text in
+                    text.range(of: "podcast", options: [.caseInsensitive, .diacriticInsensitive]) != nil
+                }) {
                     isPodcast = true
                 }
                 

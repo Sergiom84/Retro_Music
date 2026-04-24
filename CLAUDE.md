@@ -9,6 +9,7 @@
 - watchOS: `RetroMusicAppWatch/RetroMusicAppWatch`
 - UI compartida viva del watch: `Shared/UI/ContentViewWatch.swift`
 - Modelos compartidos: `Shared/Models`
+- Playback compartido: `Shared/Playback/AudioPlayerManager.swift`
 - Configuracion del proyecto: `project.yml`
 - Proyecto generado: `RetroMusic.xcodeproj`
 
@@ -16,7 +17,7 @@
 - El watch arranca desde `RetroMusicAppWatch/RetroMusicAppWatch/RetroMusicAppWatch.swift` y usa `ContentViewWatch` en `Shared/UI/ContentViewWatch.swift`.
 - La libreria local del watch vive en `retromusic_tracks.json`.
 - La libreria local del iPhone vive en `retromusic_folders.json`.
-- `AudioPlayerManager` es el unico motor de reproduccion del watch para audio local y radio live.
+- `AudioPlayerManager` es el motor compartido para audio local del watch y radio live en iOS/watchOS.
 - `WatchConnectivity` solo sirve para sync entre iPhone y watch; no participa en la radio del watch.
 
 ## Contrato de producto a respetar
@@ -30,8 +31,8 @@
 ## No te dejes arrastrar por estas trampas
 - No edites `RetroMusic.xcodeproj`; edita `project.yml` y regenera.
 - No tomes `RetroMusicAppWatch/RetroMusicAppWatch/ContentView.swift` como raiz real del watch; parece legacy/no usada.
-- No uses el `RadioPlayer` dentro de `RetroMusicAppiOS/RetroMusicAppiOS/RadioListView.swift` como base para watch; ese codigo no vive en el target watch.
-- No asumas que las emisoras son iguales en iOS y watch; hoy estan duplicadas y Global Radio no coincide.
+- No vuelvas a usar Safari/web player como reproductor principal de radio iOS; la ruta nativa usa `AudioPlayerManager`.
+- No dupliques emisoras por target; el catalogo vive en `Shared/Models/RadioStation.swift`.
 - No reintroduzcas `UserDefaults` como persistencia principal de libreria.
 - No dependas de `git status`; esta copia local puede no tener `.git`.
 
@@ -42,11 +43,11 @@
 - No mezcles un fallo de red del watch con un fallo de WatchConnectivity.
 
 ## Si el problema es radio
-- La fuente de verdad del watch esta en `Shared/UI/ContentViewWatch.swift`.
-- La experiencia iOS de radio es Safari/web; no valida el mismo flujo que watchOS.
+- La fuente de verdad del catalogo esta en `Shared/Models/RadioStation.swift`.
+- iOS y watchOS reproducen radio con `AudioPlayerManager`, aunque el watch debe validarse con su propia red real.
 - Antes de refactorizar, comprueba si el fallo es una URL mala, una incompatibilidad del stream o falta de estados de error/buffering.
 - Usa `Pure Ibiza` como smoke test principal antes de culpar al reproductor.
-- Si cambias catalogo de emisoras, revisa iOS y watch en el mismo cambio.
+- Si cambias catalogo de emisoras, revisa `RadioCatalog` y prueba iOS/watch.
 
 ## Routines o skills recomendadas
 - `retromusic-context-loader`

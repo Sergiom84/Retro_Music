@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var selectedFolder: Folder? = nil
 
     @StateObject var connectivityManager = WatchConnectivityManager()
+    @StateObject private var radioPlayerManager = AudioPlayerManager()
 
     private static var foldersFileURL: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
@@ -25,11 +26,7 @@ struct ContentView: View {
                 // Debug info - temporal
                 #if DEBUG && os(iOS)
                 if WCSession.isSupported() {
-                    let session = WCSession.default
-                    Text("Watch: \(session.isPaired ? "✅" : "❌") | Installed: \(session.isWatchAppInstalled ? "✅" : "❌") | Reachable: \(session.isReachable ? "✅" : "❌")")
-                        .font(.caption2)
-                        .foregroundColor(.white.opacity(0.7))
-                        .padding(4)
+                    WatchConnectivityDebugView(status: connectivityManager.sessionStatus)
                 }
                 #endif
 
@@ -50,7 +47,7 @@ struct ContentView: View {
 
                     IPodSeparator()
 
-                    NavigationLink(destination: RadioListView()) {
+                    NavigationLink(destination: RadioListView(audioPlayerManager: radioPlayerManager)) {
                         IPodMenuRow(label: "Radio", icon: "dot.radiowaves.left.and.right")
                     }
                     .buttonStyle(IPodButtonStyle())
@@ -81,7 +78,7 @@ struct ContentView: View {
                             connectivityManager: connectivityManager
                         )
                     ) {
-                        IPodMenuRow(label: "Settings", icon: "gearshape.fill")
+                        IPodMenuRow(label: "Playlists", icon: "music.note.list")
                     }
                     .buttonStyle(IPodButtonStyle())
 
@@ -93,7 +90,10 @@ struct ContentView: View {
             .background(IPodTheme.backgroundGradient.ignoresSafeArea())
             .navigationBarHidden(true)
         }
-        .onAppear(perform: loadFolders)
+        .onAppear {
+            connectivityManager.refreshSessionStatus()
+            loadFolders()
+        }
         .onChange(of: folders) { _, _ in
             saveFolders()
         }
@@ -133,7 +133,7 @@ struct ContentView: View {
             return
         }
 
-        folders = [Folder(id: UUID(), name: "My Music", audioTracks: [])]
+        folders = [Folder(id: UUID(), name: "My Playlist", audioTracks: [])]
     }
 }
 
@@ -142,3 +142,48 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
     }
 }
+
+#if DEBUG && os(iOS)
+private struct WatchConnectivityDebugView: View {
+    let status: WatchSessionStatus
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                DebugStatusBadge(label: "Watch", isOn: status.isPaired)
+                DebugStatusBadge(label: "Installed", isOn: status.isWatchAppInstalled)
+                DebugStatusBadge(label: "Reachable", isOn: status.isReachable)
+            }
+
+            Text("\(status.helpText) Sesion \(status.activationLabel).")
+                .font(IPodTheme.font(10))
+                .foregroundColor(IPodTheme.textSecondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.46))
+    }
+}
+
+private struct DebugStatusBadge: View {
+    let label: String
+    let isOn: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(isOn ? Color.green : Color.red)
+                .frame(width: 7, height: 7)
+
+            Text(label)
+                .font(IPodTheme.font(10, weight: .semibold))
+                .foregroundColor(IPodTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+    }
+}
+#endif

@@ -20,7 +20,6 @@ struct ContentView: View {
                         NavigationLink(
                             destination: NowPlayingView(
                                 audioPlayerManager: audioPlayerManager,
-                                connectivityManager: connectivityManager,
                                 tracks: connectivityManager.receivedAudioTracks,
                                 initialTrackIndex: index
                             )

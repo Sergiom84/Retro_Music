@@ -1,7 +1,4 @@
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 // MARK: - iPod-style button that shows blue highlight on press
 
@@ -70,25 +67,8 @@ struct IPodTrackRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // Artwork
-            Group {
-                #if canImport(UIKit)
-                if let artworkData = track.artworkData, let uiImage = UIImage(data: artworkData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                } else {
-                    Image(systemName: "music.note")
-                        .resizable()
-                        .foregroundColor(.gray)
-                }
-                #else
-                Image(systemName: "music.note")
-                    .resizable()
-                    .foregroundColor(.gray)
-                #endif
-            }
+            IPodArtworkView(artworkData: track.artworkData)
             .frame(width: 40, height: 40)
-            .cornerRadius(4)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(track.title)
