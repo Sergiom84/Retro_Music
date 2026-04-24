@@ -12,6 +12,7 @@ struct ContentView: View {
     @StateObject var connectivityManager = WatchConnectivityManager()
     @StateObject private var radioPlayerManager = AudioPlayerManager()
     @StateObject private var radioStationStore = UserRadioStationStore()
+    @StateObject private var homeModel = HomeModel()
 
     private static var foldersFileURL: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
@@ -30,6 +31,28 @@ struct ContentView: View {
                     WatchConnectivityDebugView(status: connectivityManager.sessionStatus)
                 }
                 #endif
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        HomeSectionsView(
+                            homeModel: homeModel,
+                            stationStore: radioStationStore,
+                            allStations: RadioCatalog.stations(adding: radioStationStore.stations),
+                            onResumeMusic: {},
+                            onResumePodcast: {},
+                            onPlayStation: { station in
+                                radioPlayerManager.playAudio(
+                                    url: station.streamURL,
+                                    title: station.name,
+                                    artist: "Live Radio",
+                                    artworkData: nil,
+                                    isLiveStream: true
+                                )
+                            }
+                        )
+                        .padding(.top, 12)
+                    }
+                }
 
                 // Menu items
                 VStack(spacing: 0) {
