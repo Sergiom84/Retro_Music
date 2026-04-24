@@ -23,6 +23,7 @@
 		5C32C9A457A93C75A474CD8D /* IPodMenuRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F252958C965C489DBC54478 /* IPodMenuRow.swift */; };
 		5C53606C234518038A27AE1F /* DocumentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E127C3427718C2321D81773 /* DocumentPicker.swift */; };
 		6825995ED59A77493D31D69C /* AudioMetadataExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 221DE16598228C2E68C50975 /* AudioMetadataExtractor.swift */; };
+		6BFD08025A3A547F1B7002BA /* HomeSectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 963FB0AC5E0E2F6997E6700C /* HomeSectionsView.swift */; };
 		6F7B01DF6F3171CFF9CF5662 /* IPodProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14EC27A2D31B6BC0B90E4B14 /* IPodProgressBar.swift */; };
 		717B4C5F00A24B1A7F77F851 /* IPodProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14EC27A2D31B6BC0B90E4B14 /* IPodProgressBar.swift */; };
 		718728617A1203A7F6D7F473 /* AudioTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = C399378BE7C2455B5398B48E /* AudioTrack.swift */; };
@@ -93,6 +94,7 @@
 		8499358E145CC53EB44A8F3F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		8EF7536D1E200F327F463D6A /* IPodTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPodTheme.swift; sourceTree = "<group>"; };
 		90B09DCB2425BF35151B7D52 /* IPodArtworkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPodArtworkView.swift; sourceTree = "<group>"; };
+		963FB0AC5E0E2F6997E6700C /* HomeSectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSectionsView.swift; sourceTree = "<group>"; };
 		97F15681BCFE34E9DC083B0F /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		C399378BE7C2455B5398B48E /* AudioTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrack.swift; sourceTree = "<group>"; };
 		C7C162262138220B561DEE4E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -192,6 +194,7 @@
 				E3BA07F26A03ED726EAB2395 /* ContentView.swift */,
 				7E127C3427718C2321D81773 /* DocumentPicker.swift */,
 				2545577072E8F55591647D61 /* FolderListView.swift */,
+				963FB0AC5E0E2F6997E6700C /* HomeSectionsView.swift */,
 				0A8BD70E1B5CEE3455897C91 /* Info.plist */,
 				7FD593AC9B11BB165B9E5D7F /* RadioListView.swift */,
 				5703086C020306798F49B07B /* RetroMusicApp.swift */,
@@ -378,6 +381,7 @@
 				5C53606C234518038A27AE1F /* DocumentPicker.swift in Sources */,
 				1488E938BF6D6BEBB33F0D72 /* Folder.swift in Sources */,
 				E85FFED4F05A68A1746E3611 /* FolderListView.swift in Sources */,
+				6BFD08025A3A547F1B7002BA /* HomeSectionsView.swift in Sources */,
 				5355219482EF839E9269D8FC /* IPodArtworkView.swift in Sources */,
 				A32549FE2FCF421536BAF84F /* IPodMenuRow.swift in Sources */,
 				717B4C5F00A24B1A7F77F851 /* IPodProgressBar.swift in Sources */,
